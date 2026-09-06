@@ -31,6 +31,12 @@ const CONFIG = {
 
   // Separador de los campos dentro de cada etiqueta del menu del atajo.
   SEP: ' | ',
+
+  // Categorias que NO salen en el menu del atajo. Solo afecta a lo que se
+  // muestra: si mandas una subcategoria de una categoria oculta, se
+  // registra igual. Se puede cambiar por peticion con "&excluir=...",
+  // y "&excluir=" (vacio) muestra todas.
+  CATEGORIAS_OCULTAS: ['Ingresos'],
 };
 
 const MESES = [
@@ -56,7 +62,7 @@ function doGet(e) {
       return json_({ ok: true, mensaje: 'Conexion correcta', mes: mesActual_() });
     }
     if (accion === 'catalogo') {
-      return json_(catalogo_(p.mes));
+      return json_(catalogo_(p.mes, p.excluir));
     }
     if (accion === 'resumen') {
       return json_(resumen_(p.mes));
@@ -153,17 +159,19 @@ function agregarTransaccion_(datos) {
  * Lista de subcategorias con su presupuesto y lo que va gastado en el mes.
  * Es lo que el atajo usa para pintar el menu de categorias.
  */
-function catalogo_(mesPedido) {
+function catalogo_(mesPedido, excluirPedido) {
   const nombreMes = mesPedido ? String(mesPedido) : mesActual_();
   const hoja = hojaDelMes_(nombreMes);
   const disposicion = ubicarEncabezado_(hoja, { conFecha: true });
   const estimados = estimadosDelPresupuesto_();
   const gastados = gastadoPorSubcategoria_(hoja, disposicion);
+  const ocultas = categoriasOcultas_(excluirPedido);
 
   const items = [];
   const etiquetas = [];
 
   disposicion.bloques.forEach(function (bloque, indice) {
+    if (estaOculta_(bloque.categoria, ocultas)) return;
     const subs = subsDelBloque_(estimados, bloque, indice);
     Object.keys(subs).forEach(function (sub) {
       const estimado = subs[sub];
@@ -188,6 +196,27 @@ function catalogo_(mesPedido) {
   });
 
   return { ok: true, mes: nombreMes, etiquetas: etiquetas, items: items };
+}
+
+/**
+ * Categorias que no deben salir en el menu.
+ *   - parametro ausente  -> las de CONFIG.CATEGORIAS_OCULTAS
+ *   - "&excluir=Ahorros" -> solo esas
+ *   - "&excluir="        -> ninguna (se muestran todas)
+ */
+function categoriasOcultas_(excluirPedido) {
+  if (excluirPedido === undefined || excluirPedido === null) {
+    return CONFIG.CATEGORIAS_OCULTAS || [];
+  }
+  return String(excluirPedido).split(',').filter(function (nombre) {
+    return nombre.trim() !== '';
+  });
+}
+
+function estaOculta_(categoria, ocultas) {
+  return ocultas.some(function (oculta) {
+    return sonLaMismaCategoria_(categoria, oculta);
+  });
 }
 
 /**

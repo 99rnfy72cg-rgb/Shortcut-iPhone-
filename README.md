@@ -120,7 +120,7 @@ Todo pasa por la misma URL. El token va en cada llamada.
 | Qué | Cómo |
 | --- | --- |
 | Comprobar conexión | `GET  …/exec?token=T&accion=ping` |
-| Menú de categorías | `GET  …/exec?token=T&accion=catalogo[&mes=Octubre]` |
+| Menú de categorías | `GET  …/exec?token=T&accion=catalogo[&mes=Octubre][&excluir=Ahorros]` |
 | Resumen del mes | `GET  …/exec?token=T&accion=resumen[&mes=Octubre]` |
 | Registrar transacción | `POST …/exec` con cuerpo JSON |
 
@@ -165,6 +165,28 @@ Si el texto coincide con varias, te responde cuáles son y te pide que
 añadas también `categoria`. Si no coincide con ninguna, te lista las
 opciones disponibles.
 
+### Qué sale en el menú
+
+Por defecto el menú del atajo **no muestra las categorías de Ingresos**: la
+lista se usa para registrar gastos, y tenerlos ahí solo estorba. Se controla
+con `CONFIG.CATEGORIAS_OCULTAS`:
+
+```js
+CATEGORIAS_OCULTAS: ['Ingresos'],
+```
+
+Y se puede cambiar por petición, sin tocar el script:
+
+| URL | Qué devuelve |
+| --- | --- |
+| `&accion=catalogo` | todo menos Ingresos (el valor de `CONFIG`) |
+| `&accion=catalogo&excluir=` | absolutamente todo |
+| `&accion=catalogo&excluir=Ahorros,Inversiones` | todo menos esas dos |
+
+Es solo un filtro de **lo que se muestra**. Registrar sigue funcionando con
+cualquier subcategoría, oculta o no — así un segundo atajo "Ingreso" puede
+usar `&excluir=` y escribir en Ingresos con el mismo script.
+
 ### Montos
 
 Acepta `25`, `"25"`, `"25,40"`, `"$1,330.00"` y `"1.330,50"`. Rechaza
@@ -197,7 +219,7 @@ pestañas mensuales, los seis bloques, los nombres con espacio final):
 node pruebas/ejecutar.js
 ```
 
-25 casos: detección de la plantilla, formatos de monto, resolución de
+29 casos: detección de la plantilla, formatos de monto, resolución de
 subcategorías ambiguas, escritura en la fila correcta, catálogo, resumen y
 rechazo de token inválido.
 

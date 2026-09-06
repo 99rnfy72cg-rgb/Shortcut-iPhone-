@@ -98,7 +98,7 @@ t('rechaza monto invalido y negativo', ()=>{
 console.log('\n--- catalogo y resumen para el atajo ---');
 t('catalogo trae etiquetas legibles', ()=>{
   const c = catalogo_('Septiembre');
-  igual(c.items.length, 19);
+  igual(c.items.length, 16);   // 19 menos las 3 de Ingresos, ocultas por defecto
   const g = c.items.find(i=>i.subcategoria==='🥑 Groceries ');
   igual(g.etiqueta, '🥑 Groceries  | Gastos Esenciales | queda $419.60');
 });
@@ -108,6 +108,25 @@ t('marca cuando te pasaste del presupuesto', ()=>{
   const c = catalogo_('Septiembre');
   const excedido = c.items.find(i=>i.subcategoria==='💅 Nails');
   igual(excedido.etiqueta, '💅 Nails | Gastos Esenciales | excedido $40.00');
+});
+t('el menu oculta Ingresos por defecto', ()=>{
+  const c = catalogo_('Septiembre');
+  if (c.items.some(i=>i.categoria==='Ingresos')) throw new Error('todavia salen ingresos');
+  igual(c.items.length, 16);   // 19 menos las 3 de Ingresos
+});
+t('se puede pedir el catalogo completo', ()=>{
+  const c = catalogo_('Septiembre', '');
+  igual(c.items.length, 19);
+  if (!c.items.some(i=>i.categoria==='Ingresos')) throw new Error('faltan los ingresos');
+});
+t('se puede ocultar otra categoria a peticion', ()=>{
+  const c = catalogo_('Septiembre', 'Ahorros,Inversiones');
+  if (c.items.some(i=>i.categoria==='Ahorros' || i.categoria==='Inversiones')) throw new Error('no filtro');
+  if (!c.items.some(i=>i.categoria==='Ingresos')) throw new Error('el parametro debe reemplazar el defecto');
+});
+t('registrar un ingreso sigue funcionando aunque este oculto', ()=>{
+  const r = agregarTransaccion_({monto:500, subcategoria:'KFE', mes:'Octubre'});
+  igual(r.categoria, 'Ingresos');
 });
 t('resumen suma por categoria', ()=>{
   const r = resumen_('Septiembre');
