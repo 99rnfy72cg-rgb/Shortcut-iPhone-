@@ -187,6 +187,18 @@ Es solo un filtro de **lo que se muestra**. Registrar sigue funcionando con
 cualquier subcategoría, oculta o no — así un segundo atajo "Ingreso" puede
 usar `&excluir=` y escribir en Ingresos con el mismo script.
 
+### La nota (columna del ✏️)
+
+El campo `nota` se escribe en la columna del lápiz de cada bloque. Esa
+columna se localiza **por posición** — es la primera después de `Monto`
+cuyo encabezado no está vacío — porque en la plantilla su título es solo el
+emoji ✏️, sin ninguna letra. Una columna separadora, que sí tiene el
+encabezado vacío, nunca se confunde con ella.
+
+Si mandas una nota y no hay columna donde ponerla, la respuesta lo dice
+(`notaGuardada: false` y un aviso en `mensaje`) en vez de descartarla en
+silencio.
+
 ### Montos
 
 Acepta `25`, `"25"`, `"25,40"`, `"$1,330.00"` y `"1.330,50"`. Rechaza
@@ -219,7 +231,7 @@ pestañas mensuales, los seis bloques, los nombres con espacio final):
 node pruebas/ejecutar.js
 ```
 
-29 casos: detección de la plantilla, formatos de monto, resolución de
+34 casos: detección de la plantilla, formatos de monto, resolución de
 subcategorías ambiguas, escritura en la fila correcta, catálogo, resumen y
 rechazo de token inválido.
 

@@ -124,12 +124,15 @@ Y si algo sale mal, la misma notificación te dice por qué:
 
 ### Añadir una nota (“Publix”, “cine”, …)
 
-Entre los pasos 4 y 5, añade otra **“Solicitar entrada”**:
+Para acordarte a qué transferencia corresponde cada monto. Se escribe en la
+columna del ✏️ de la hoja.
+
+**Entre los pasos 4 y 5**, añade otra **“Solicitar entrada”**:
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | **Texto** |
-| Pregunta | `Nota (opcional)` |
+| Pregunta | `¿Para qué fue?` |
 | Permitir varias líneas | No |
 
 Y en el paso 5 añade un cuarto campo al JSON:
@@ -137,6 +140,20 @@ Y en el paso 5 añade un cuarto campo al JSON:
 | Clave | Tipo | Valor |
 | --- | --- | --- |
 | `nota` | Texto | la variable de esa nueva entrada |
+
+Dos cosas que cuestan tiempo si no las sabes:
+
+* La acción nueva **se añade al final** del atajo. Hay que **mantenerla
+  pulsada y arrastrarla** hasta quedar justo encima de la acción del POST;
+  si se queda abajo, la pregunta llega después de haber registrado el gasto.
+* **No uses “Ask Each Time”** como valor de `nota`. Dentro de un cuerpo JSON
+  no pregunta una sola cosa: abre el editor de *todos* los campos, con
+  Cancel/Done, y encima los rellena mal. Usa una acción “Solicitar entrada”
+  propia.
+
+Tendrás dos variables llamadas *Ask for Input* (la del monto y la de la
+nota) y no se distinguen a simple vista. Toca la burbuja nueva y en
+**Variable Name** ponle `Nota`.
 
 ### Registrar en otro mes
 

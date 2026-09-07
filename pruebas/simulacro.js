@@ -20,12 +20,13 @@ class Hoja {
   }
 }
 
-function hojaMes(nombre, transacciones){
+function hojaMes(nombre, transacciones, encabezadoNota){
   const h = new Hoja(nombre, 120, 40);
+  const tituloNota = encabezadoNota === undefined ? 'N\u270f\ufe0f' : encabezadoNota;
   // Zona de resumen (encabezado SIN "Fecha"): fila 40
   CATS.forEach((cat,i)=>{ const c=1+i*5; h.set(39,c,cat); h.set(40,c,'Subcategoria'); h.set(40,c+1,'Estimado'); h.set(40,c+2,'Real'); });
   // Zona de transacciones (encabezado CON "Fecha"): fila 59
-  CATS.forEach((cat,i)=>{ const c=1+i*5; h.set(58,c,cat); h.set(59,c,'Subcategoría'); h.set(59,c+1,'Fecha'); h.set(59,c+2,'Monto'); h.set(59,c+3,'N✏️'); });
+  CATS.forEach((cat,i)=>{ const c=1+i*5; h.set(58,c,cat); h.set(59,c,'Subcategoría'); h.set(59,c+1,'Fecha'); h.set(59,c+2,'Monto'); h.set(59,c+3,tituloNota); });
   (transacciones||[]).forEach(t=>{ const c=1+CATS.indexOf(t.cat)*5; h.set(t.fila,c,t.sub); h.set(t.fila,c+2,t.monto); });
   return h;
 }
@@ -47,7 +48,14 @@ const septiembre = hojaMes('Septiembre', [
   {cat:'GASTOS ESENCIALES', fila:61, sub:'🏡  Rent ', monto:1173},
   {cat:'INGRESOS', fila:60, sub:'KFE 🇺🇸', monto:1330},
 ]);
-const hojas=[presupuesto, hojaMes('Enero',[]), septiembre, hojaMes('Octubre',[])];
+// Noviembre: el encabezado de la columna de notas es SOLO el emoji del lapiz,
+// como en la hoja real. Diciembre: no hay columna de notas (encabezado vacio),
+// solo la columna separadora.
+const hojas=[
+  presupuesto, hojaMes('Enero',[]), septiembre, hojaMes('Octubre',[]),
+  hojaMes('Noviembre', [], '\u270f\ufe0f'),
+  hojaMes('Diciembre', [], ''),
+];
 
 global.SpreadsheetApp = {
   getActiveSpreadsheet: ()=>({

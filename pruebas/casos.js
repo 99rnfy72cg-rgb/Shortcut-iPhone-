@@ -95,6 +95,41 @@ t('rechaza monto invalido y negativo', ()=>{
   if(!/Monto invalido/.test(a)) throw new Error(a); if(!/mayor que cero/.test(b)) throw new Error(b);
 });
 
+console.log('\n--- la columna de la nota ---');
+t('encuentra la columna aunque el encabezado sea solo el emoji del lapiz', ()=>{
+  const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Noviembre');
+  const d = ubicarEncabezado_(h, {conFecha:true});
+  igual(d.bloques[1].colNota, 9, 'columna de nota en Gastos Esenciales');
+});
+t('escribe la nota y la repite en el mensaje', ()=>{
+  const r = agregarTransaccion_({monto:14, subcategoria:'groceries', nota:'Publix', mes:'Noviembre'});
+  const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Noviembre');
+  igual(h.d[59][8], 'Publix');
+  igual(r.notaGuardada, true);
+  if(!/Publix/.test(r.mensaje)) throw new Error('el mensaje no repite la nota: '+r.mensaje);
+});
+t('sin nota no escribe nada ni ensucia el mensaje', ()=>{
+  const r = agregarTransaccion_({monto:5, subcategoria:'groceries', mes:'Noviembre'});
+  const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Noviembre');
+  igual(h.d[60][8], '');
+  igual(r.notaGuardada, false);
+  if(/Ojo/.test(r.mensaje)) throw new Error('avisa de una nota que no mande: '+r.mensaje);
+});
+t('una nota en blanco se trata como si no viniera', ()=>{
+  const r = agregarTransaccion_({monto:5, subcategoria:'groceries', nota:'   ', mes:'Noviembre'});
+  igual(r.notaGuardada, false);
+  if(/Ojo/.test(r.mensaje)) throw new Error(r.mensaje);
+});
+t('no confunde la columna separadora con la de notas', ()=>{
+  const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Diciembre');
+  const d = ubicarEncabezado_(h, {conFecha:true});
+  igual(d.bloques[1].colNota, 0, 'no debe haber columna de notas');
+  const r = agregarTransaccion_({monto:7, subcategoria:'groceries', nota:'algo', mes:'Diciembre'});
+  igual(r.notaGuardada, false);
+  igual(h.d[59][9], '');   // la separadora sigue vacia
+  if(!/no se guardo/.test(r.mensaje)) throw new Error('deberia avisar: '+r.mensaje);
+});
+
 console.log('\n--- catalogo y resumen para el atajo ---');
 t('catalogo trae etiquetas legibles', ()=>{
   const c = catalogo_('Septiembre');

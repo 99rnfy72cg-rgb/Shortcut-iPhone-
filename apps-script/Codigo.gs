@@ -132,8 +132,11 @@ function agregarTransaccion_(datos) {
       .setNumberFormat(CONFIG.FORMATO_FECHA);
   }
   hoja.getRange(fila, bloque.colMonto).setValue(monto);
-  if (bloque.colNota && datos.nota) {
-    hoja.getRange(fila, bloque.colNota).setValue(String(datos.nota));
+
+  const nota = String(datos.nota === null || datos.nota === undefined ? '' : datos.nota).trim();
+  const notaGuardada = !!(nota && bloque.colNota);
+  if (notaGuardada) {
+    hoja.getRange(fila, bloque.colNota).setValue(nota);
   }
   SpreadsheetApp.flush();
 
@@ -142,13 +145,14 @@ function agregarTransaccion_(datos) {
 
   return {
     ok: true,
-    mensaje: formatearMensaje_(monto, elegida, nombreMes, estado),
+    mensaje: formatearMensaje_(monto, elegida, nombreMes, estado, nota, notaGuardada),
     mes: nombreMes,
     fila: fila,
     categoria: bloque.categoria,
     subcategoria: elegida.subcategoria,
     monto: monto,
-    nota: datos.nota || '',
+    nota: nota,
+    notaGuardada: notaGuardada,
     estimado: estado.estimado,
     gastado: estado.gastado,
     restante: estado.restante,
@@ -281,7 +285,7 @@ function ubicarEncabezado_(hoja, opciones) {
     if (conFecha !== tieneFecha) continue;
 
     const arriba = f > 0 ? valores[f - 1] : [];
-    const bloques = leerBloques_(fila, arriba);
+    const bloques = leerBloques_(fila, arriba, valores[f]);
     if (bloques.length) {
       return { fila: f + 1, bloques: bloques };
     }
@@ -297,7 +301,7 @@ function ubicarEncabezado_(hoja, opciones) {
 /**
  * A partir de la fila de encabezado arma los bloques de 1 categoria.
  */
-function leerBloques_(filaEncabezado, filaCategorias) {
+function leerBloques_(filaEncabezado, filaCategorias, filaCruda) {
   const bloques = [];
   for (let c = 0; c < filaEncabezado.length; c++) {
     if (filaEncabezado[c] !== 'subcategoria') continue;
@@ -315,12 +319,24 @@ function leerBloques_(filaEncabezado, filaCategorias) {
       if (titulo === 'subcategoria') break;
       if (titulo === 'fecha' && !bloque.colFecha) bloque.colFecha = d + 1;
       else if (titulo === 'monto' && !bloque.colMonto) bloque.colMonto = d + 1;
-      else if (bloque.colMonto && !bloque.colNota && titulo.charAt(0) === 'n') bloque.colNota = d + 1;
+      else if (bloque.colMonto && !bloque.colNota && tieneEncabezado_(filaCruda, d)) {
+        // La columna de notas es la primera despues de "Monto" que tenga
+        // algo escrito en su encabezado. Se mira el texto SIN normalizar
+        // porque en la plantilla ese encabezado es solo el emoji del
+        // lapiz: al normalizarlo no queda ninguna letra. Una columna
+        // separadora, en cambio, tiene el encabezado vacio.
+        bloque.colNota = d + 1;
+      }
     }
 
     if (bloque.colMonto) bloques.push(bloque);
   }
   return bloques;
+}
+
+function tieneEncabezado_(filaCruda, indice) {
+  if (!filaCruda) return false;
+  return String(filaCruda[indice] === null || filaCruda[indice] === undefined ? '' : filaCruda[indice]).trim() !== '';
 }
 
 /**
@@ -557,8 +573,14 @@ function estadoSubcategoria_(hoja, disposicion, bloque, subcategoria) {
   return { estimado: estimado, gastado: gastado, restante: estimado - gastado };
 }
 
-function formatearMensaje_(monto, elegida, nombreMes, estado) {
-  const cabeza = dinero_(monto) + ' en ' + elegida.subcategoria + ' (' + nombreMes + ')';
+function formatearMensaje_(monto, elegida, nombreMes, estado, nota, notaGuardada) {
+  let cabeza = dinero_(monto) + ' en ' + elegida.subcategoria + ' (' + nombreMes + ')';
+  if (nota && notaGuardada) {
+    cabeza += '\n' + nota;
+  } else if (nota) {
+    // Mejor decirlo que perder la nota sin avisar.
+    cabeza += '\nOjo: no encontre la columna de notas, la nota no se guardo.';
+  }
   if (!estado.estimado) {
     return cabeza + '\nLlevas ' + dinero_(estado.gastado) + ' este mes.';
   }
@@ -715,6 +737,16 @@ function json_(objeto) {
  * conceder permisos y comprobar que la plantilla se lee bien.
  */
 function probar() {
+  const hoja = hojaDelMes_(mesActual_());
+  const disposicion = ubicarEncabezado_(hoja, { conFecha: true });
+  Logger.log('Pestana "%s", encabezado en la fila %s', hoja.getName(), disposicion.fila);
+  disposicion.bloques.forEach(function (b) {
+    Logger.log(
+      '  %s -> subcategoria=%s fecha=%s monto=%s nota=%s',
+      b.categoria, b.colSub, b.colFecha || '(ninguna)', b.colMonto, b.colNota || '(NO ENCONTRADA)'
+    );
+  });
+
   const cat = catalogo_();
   Logger.log('Mes: %s', cat.mes);
   Logger.log('Subcategorias encontradas: %s', cat.items.length);
